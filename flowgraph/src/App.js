@@ -13,6 +13,7 @@ function App() {
   let dragTarget = null;
   let startX = null;
   let startY = null;
+  let question = null;
 
   const boxes = [
     {
@@ -65,16 +66,11 @@ function App() {
     const canvasEle = canvas.current;
     canvasEle.width = canvasEle.clientWidth;
     canvasEle.height = canvasEle.clientHeight;
-    console.log(canvasEle.clientWidth);
-    console.log(canvasEle.clientHeight);
- 
-    // get context of the canvas
     ctx = canvasEle.getContext("2d");
-    //drawStartCircle(boxes[0]);
     draw();
   });
 
-  const drawStartCircle = (circle) => {
+  const drawCircle = (circle) => {
     ctx.beginPath();
     ctx.arc(circle.size.x, circle.size.y, circle.size.r, 0, 2 * Math.PI);
     ctx.fillStyle = "black";
@@ -86,16 +82,14 @@ function App() {
   }
  
   const draw = () => {
-    
 
-    console.log(canvas.current.clientWidth);
     ctx.clearRect(0, 0, canvas.current.clientWidth, canvas.current.clientHeight);
     boxes.map(info => {
-      if(info.isCircle) drawStartCircle(info);
+      if(info.isCircle) drawCircle(info);
       else drawFillRect(info);
       if(info.pid){
         parentBox = getParent(info.pid);
-        console.log('parent ' ,parentBox);
+        //console.log('parent ' ,parentBox);
         linDrawBetweenPrentAndChild(parentBox.size, info.size, parentBox.isCircle, info.isCircle);
       }
     });
@@ -123,6 +117,7 @@ function App() {
     }
   }
 
+  // finding parent of a child
   const getParent = (pid) => {
     for(let i = 0; i < boxes.length; i++){
       if(boxes[i].id === pid){
@@ -134,18 +129,17 @@ function App() {
   // draw rectangle with background
   const drawFillRect = (info, style = {}) => {
     console.log(info.id);
+    //draw rectangle
     const { x, y, w, h } = info.size;
     const dotRect = info.threeDotButtonSize;
-    const { backgroundColor = 'black' } = style;
- 
     ctx.beginPath();
-    ctx.fillStyle = backgroundColor;
+    ctx.fillStyle = 'black';
     ctx.fillRect(x, y, w, h);
 
+    //dropdown rectangle
     ctx.fillStyle = 'white';
-    
     ctx.fillRect(info.dropdownBox.x, info.dropdownBox.y, info.dropdownBox.w, info.dropdownBox.h);
-
+    //dropdown box inside text
     ctx.lineWidth = 4;
     ctx.strokeStyle = "#000000";
     ctx.font="12px Georgia";
@@ -154,21 +148,19 @@ function App() {
     ctx.fillStyle = "red";
     ctx.fillText('Question?...', info.dropdownBox.x + (info.dropdownBox.w/2), info.dropdownBox.y + (info.dropdownBox.h/2));
 
+    //drawing dropdown triangle
     let tringleX1 = info.dropdownBox.x + info.dropdownBox.w - 18;
     let tringleX2 = info.dropdownBox.x + info.dropdownBox.w - 15;
     let tringleX3 = (tringleX1 + tringleX2) / 2;
-    
-    //drawing dropdown triangle
     ctx.moveTo(tringleX1, info.dropdownBox.y + 6);
     ctx.lineTo(tringleX2, info.dropdownBox.y + 6);
     ctx.lineTo(tringleX3, info.dropdownBox.y + 8);
-    ctx.closePath();
-    
-
+    ctx.closePath();  
     ctx.lineWidth = 10;
-    ctx.strokeStyle = '#666666';
+    ctx.strokeStyle = 'black';
     ctx.stroke();
     
+    //draw three dot button
     ctx.fillStyle = 'black';
     ctx.fillRect(dotRect.x, dotRect.y, dotRect.w, dotRect.h);
     ctx.lineWidth = 4;
@@ -178,36 +170,9 @@ function App() {
     ctx.textBaseline = "middle";
     ctx.fillStyle = "red";
     ctx.fillText('...', dotRect.x + (dotRect.w/2), dotRect.y + (dotRect.h/2));
-
-    // ctx.lineWidth = 4;
-    // ctx.strokeStyle = "#000000";
-    // ctx.font="12px Georgia";
-    // ctx.textAlign="center"; 
-    // ctx.textBaseline = "middle";
-    // ctx.fillStyle = "red";
-    // ctx.fillText(info.id,x+(w/2),y+(h/5));
-
-    // ctx.lineWidth = 4;
-    // ctx.strokeStyle = "#000000";
-    // ctx.font="12px Georgia";
-     
-    // ctx.textBaseline = "middle";
-    // ctx.fillStyle = "red";    
-    // ctx.fillText(info.text,x+(w/2),y+(h/2));
-
-    // ctx.lineWidth = 4;
-    // ctx.strokeStyle = "#000000";
-    // ctx.font="12px Georgia";
-    // ctx.textAlign="center"; 
-    // ctx.textBaseline = "middle";
-    // ctx.fillStyle = "red";
-    // let next = 'null';
-    // if(info.next) next = info.next;
-    // ctx.fillText(next,x+(w/2),y+(3*h/4));
-    //size.x += 150;
-    //size.y += 150;
   }
 
+  //design and positioning the menu bar
   const positioningMenuItem = (menuItem , text) => {
     console.log(menuItem)
     ctx.beginPath();
@@ -232,6 +197,24 @@ function App() {
     positioningMenuItem(box.deleteField, 'Delete');
     positioningMenuItem(box.responseField, 'Add response');
   }
+
+  const pushChildIntoBoxes = (box) => {
+    let height = (box.isCircle) ? box.size.r : box.size.h;
+
+    boxes.push({
+      id: boxes.length,
+      pid: box.id,
+      size: {x: box.size.x,y: box.size.y+height+50,w: 170,h: 80},
+      dropdownBox: {x: box.size.x+20, y: box.size.y+height+60, w: 130, h: 15},
+      threeDotButtonSize: {x: box.size.x + 140, y: box.size.y+height+110, w: 30, h: 20},
+      addField: {x: box.size.x + 170, y: box.size.y+height+30, w: 100, h: 30},
+      editField: {x: box.size.x + 170, y: box.size.y+height+60, w: 100, h: 30},
+      deleteField: {x: box.size.x + 170, y: box.size.y+height+90, w: 100, h: 30},
+      responseField: {x: box.size.x + 170, y: box.size.y+height+120, w: 100, h: 30},
+      isCircle: false
+    });
+    draw();
+  }
  
   // identify the click event in the rectangle
   const hitBox = (x, y) => {
@@ -245,25 +228,27 @@ function App() {
         if((x-box.size.x) * (x-box.size.x) + (y-box.size.y) * (y-box.size.y) - box.size.r * box.size.r <= 0){
           dragTarget = box;
           isTarget = true;
-          boxes.push({
-            id: '5',
-            pid: '0',
-            text: 'Are you feeling any pain today?',
-            size: {x: 350,y: 100,w: 170,h: 80},
-            dropdownBox: {x: 370, y: 110, w: 130, h: 15},
-            threeDotButtonSize: {x: 490, y: 160, w: 30, h: 20},
-            addField: {x: 520, y: 80, w: 100, h: 30},
-            editField: {x: 520, y: 110, w: 100, h: 30},
-            deleteField: {x: 520, y: 140, w: 100, h: 30},
-            responseField: {x: 520, y: 170, w: 100, h: 30},
-            isCircle: false
-          })
+          pushChildIntoBoxes(box);
           break;
         }
       }
 
       else if(x >= box.dropdownBox.x && x <= box.dropdownBox.x + box.dropdownBox.w && y >= box.dropdownBox.y && y <= box.dropdownBox.y + box.dropdownBox.h){
+        
         setOpenModal(true);
+        //question = 'dfdfdfd';
+        
+        if(question === null){
+          console.log(question);
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = "#000000";
+          ctx.font="12px Georgia";
+          ctx.textAlign="center"; 
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = "red";
+          ctx.fillText(question, box.size.x + (box.size.w/2), box.size.y + (box.size.h/2));
+        }
+        draw();
       }
 
       else if (x >= box.threeDotButtonSize.x && x <= box.threeDotButtonSize.x + box.threeDotButtonSize.w && y >= box.threeDotButtonSize.y && y <= box.threeDotButtonSize.y + box.threeDotButtonSize.h) {
@@ -278,6 +263,7 @@ function App() {
         dragTarget = box;
         console.log('in', dragTarget);
         isTarget = true;
+        pushChildIntoBoxes(box);
         break;
       }
       else if(x >= box.editField.x && x <= box.editField.x + box.editField.w && y >= box.editField.y && y <= box.editField.y + box.editField.h){
@@ -312,6 +298,7 @@ function App() {
     return isTarget;
   }
  
+  //handle mouse click on canvas
   const handleMouseDown = e => {
     console.log('mouse down');
 
@@ -324,6 +311,7 @@ function App() {
 
   }
 
+  //handle mouse move on canvas
   const handleMouseMove = e => {
 
     console.log(isDown);
@@ -343,6 +331,7 @@ function App() {
     dragTarget.size.x += dx;
     dragTarget.size.y += dy;
 
+    //if target box is a rectangle
     if(!dragTarget.isCircle){
       dragTarget.threeDotButtonSize.x += dx;
       dragTarget.threeDotButtonSize.y += dy;
@@ -368,8 +357,10 @@ function App() {
     handleMouseUp(e);
   }
 
-  const questionSelection = (question) => {
-    console.log(question);
+  const questionSelection = (ques) => {
+    console.log(ques);
+    question = ques;
+    draw();
 
   }
 
