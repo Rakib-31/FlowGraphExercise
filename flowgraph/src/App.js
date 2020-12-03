@@ -4,9 +4,7 @@ import QuestionModal from './modal/questionModal';
 function App() {
 
   const [openModal, setOpenModal] = useState(false);
-
   const canvas = useRef();
-  //let size = {x: 100,y: 100,w: 170,h: 80};
   let ctx = null;
   let parentBox = null;
   let isDown = false;
@@ -21,41 +19,8 @@ function App() {
       pid: null,
       text: '+',
       size: {x: 600,y: 120, r: 50},
-      isCircle: true
-    },
-    {
-      id: '1',
-      pid: '0',
-      text: 'Are you feeling any pain today?',
-      size: {x: 350,y: 100,w: 170,h: 80},
-      dropdownBox: {x: 370, y: 110, w: 130, h: 15},
-      threeDotButtonSize: {x: 490, y: 160, w: 30, h: 20},
-      addField: {x: 520, y: 80, w: 100, h: 30},
-      editField: {x: 520, y: 110, w: 100, h: 30},
-      deleteField: {x: 520, y: 140, w: 100, h: 30},
-      responseField: {x: 520, y: 170, w: 100, h: 30},
-      isCircle: false
-    },
-    {
-      id: '2',
-      pid: '0',
-      text: 'Yes',
-      next: '2',
-      size: {x: 50,y: 250,w: 170,h: 80},
-      dropdownBox: {x: 70, y: 260, w: 130, h: 15},
-      threeDotButtonSize: {x: 190, y: 310, w: 30, h: 20},
-      addField: {x: 220, y: 230, w: 100, h: 30},
-      editField: {x: 220, y: 260, w: 100, h: 30},
-      deleteField: {x: 220, y: 290, w: 100, h: 30},
-      responseField: {x: 220, y: 320, w: 100, h: 30},
-      isCircle: false
-    },
-    {
-      id: '3',
-      pid: '1',
-      text: '+',
-      size: {x: 400,y: 600, r: 50},
-      isCircle: true
+      isCircle: true,
+      level: 0
     }
   ]
   
@@ -89,7 +54,6 @@ function App() {
       else drawFillRect(info);
       if(info.pid){
         parentBox = getParent(info.pid);
-        //console.log('parent ' ,parentBox);
         linDrawBetweenPrentAndChild(parentBox.size, info.size, parentBox.isCircle, info.isCircle);
       }
     });
@@ -128,7 +92,6 @@ function App() {
  
   // draw rectangle with background
   const drawFillRect = (info, style = {}) => {
-    console.log(info.id);
     //draw rectangle
     const { x, y, w, h } = info.size;
     const dotRect = info.threeDotButtonSize;
@@ -174,7 +137,6 @@ function App() {
 
   //design and positioning the menu bar
   const positioningMenuItem = (menuItem , text) => {
-    console.log(menuItem)
     ctx.beginPath();
     ctx.fillStyle = 'blue';
     ctx.fillRect(menuItem.x, menuItem.y, menuItem.w, menuItem.h);
@@ -191,17 +153,128 @@ function App() {
   }
 
   const drawPopupMenu = (box) => {
-    console.log(box);
     positioningMenuItem(box.addField, 'Add');
     positioningMenuItem(box.editField, 'Edit');
     positioningMenuItem(box.deleteField, 'Delete');
     positioningMenuItem(box.responseField, 'Add response');
   }
 
+  const calculateBoxElementPosition = (box, diff) => {
+    box.size.x += diff;
+      //if target box is a rectangle
+      if(!box.isCircle){
+        box.threeDotButtonSize.x += diff;
+        box.addField.x += diff;
+        box.editField.x += diff;
+        box.deleteField.x += diff;
+        box.responseField.x += diff;
+        box.dropdownBox.x += diff;
+      }
+  }
+
+  const shiftAllLeft = (newBoxes,box) => {
+
+    let left = [];
+    let right = [];
+    let farX = 0;
+    let nearX = 100000000;
+    console.log(newBoxes);
+    for(let i = 0; i < newBoxes.length; i++){
+      if(newBoxes[i].pid <= box.pid){
+        left.push(newBoxes[i]);
+        if(farX<newBoxes[i].size.x){
+          farX = newBoxes[i].size.x;
+        }
+      }
+      else{
+        right.push(newBoxes[i]);
+        if(nearX > newBoxes[i].size.x){
+          nearX = newBoxes[i].size.x;
+        }
+      }
+    }
+    console.log(left);
+    let diffLeft = farX + left[left.length - 1].size.w - box.size.x + 5; 
+    diffLeft = -diffLeft;
+    for(let i = 0; i < left.length; i++){
+      calculateBoxElementPosition(left[i],diffLeft);
+    }
+
+    if(right.length > 0){
+      let diffRight = nearX - box.size.x- box.size.w - 5;
+      diffRight = -diffRight;
+      for(let i = 0; i < right.length; i++){
+        calculateBoxElementPosition(right[i], diffRight);
+      }
+    }
+  }
+
+  const shiftAllRight = (newBoxes, box) => {
+
+    let right = [];
+    let left = [];
+    let farX = 0;
+    let nearX = 10000000;
+    for(let i = 0; i < newBoxes.length; i++){
+      if(newBoxes[i].pid>box.pid){
+        right.push(newBoxes[i]);
+        if(nearX > newBoxes[i].size.x){
+          nearX = newBoxes[i].size.x;
+        }
+      }
+      else{
+        left.push(newBoxes[i]);
+        if(farX < newBoxes[i].size.x){
+          farX = newBoxes[i].size.x;
+        }
+      }
+    }
+    let diffRight = box.size.x - nearX + right[0].size.w + 5; 
+    for(let i = 0; i < right.length; i++){
+      calculateBoxElementPosition(right[i],diffRight);
+    }
+
+    if(left.length > 0){
+      let diffLeft = box.size.x - farX - left[left.length-1].size.w - 5;
+      
+      for(let i = 0; i < left.length; i++){
+        calculateBoxElementPosition(left[i], diffLeft);
+      }
+    }
+  }
+
+  const handlePositionNewChild = (box) => {
+      //making new array of boxes filtered by its level
+      const newBoxes = boxes.filter(res => res.level === box.level);
+
+      for(let i = 0; i < newBoxes.length; i++){
+        let x1 = box.size.x - newBoxes[i].size.x + box.size.w;
+        let x2 = box.size.w + newBoxes[i].size.w + 5;
+        let diff = Math.abs(x1-x2);
+        const isCollaps = (Math.abs(x1) < x2) ? true : false;
+        console.log(isCollaps);
+        
+        if(isCollaps){
+          console.log(newBoxes[i]);
+          if(box.pid >= newBoxes[i].pid){
+            console.log(newBoxes);
+            console.log(box);
+            //shift all neighbor left
+            shiftAllLeft(newBoxes,box);
+            }
+          else{
+            //shift all neighbor right
+            shiftAllRight(newBoxes, box);
+          }
+        }
+      }
+      boxes.push(box);
+      draw();
+  }
+
   const pushChildIntoBoxes = (box) => {
     let height = (box.isCircle) ? box.size.r : box.size.h;
-
-    boxes.push({
+    const newBox = {
       id: boxes.length,
       pid: box.id,
       size: {x: box.size.x,y: box.size.y+height+50,w: 170,h: 80},
@@ -211,9 +284,11 @@ function App() {
       editField: {x: box.size.x + 170, y: box.size.y+height+60, w: 100, h: 30},
       deleteField: {x: box.size.x + 170, y: box.size.y+height+90, w: 100, h: 30},
       responseField: {x: box.size.x + 170, y: box.size.y+height+120, w: 100, h: 30},
-      isCircle: false
-    });
-    draw();
+      isCircle: false,
+      level: box.level + 1
+    }
+    
+    handlePositionNewChild(newBox);
   }
  
   // identify the click event in the rectangle
@@ -236,7 +311,6 @@ function App() {
       else if(x >= box.dropdownBox.x && x <= box.dropdownBox.x + box.dropdownBox.w && y >= box.dropdownBox.y && y <= box.dropdownBox.y + box.dropdownBox.h){
         
         setOpenModal(true);
-        //question = 'dfdfdfd';
         
         if(question === null){
           console.log(question);
@@ -360,7 +434,7 @@ function App() {
   const questionSelection = (ques) => {
     console.log(ques);
     question = ques;
-    draw();
+    //draw();
 
   }
 
